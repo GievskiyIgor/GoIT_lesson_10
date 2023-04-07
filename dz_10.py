@@ -7,6 +7,9 @@ class Field ():
     
     def __str__(self) -> str:
         return str(self.value)
+    
+    def __repr__(self) -> str:
+        return str(self)
   
 
 class Name (Field):
@@ -39,8 +42,12 @@ class Record ():
         self.phones.append(phone)
 
     # Удаление телефона из адресной книги
-    def remove_record(self, phone:Phone):
-        self.phones.remove(phone)
+    def remove_phone(self, phone:Phone):
+        for i, p in enumerate(self.phones):
+            if p.value == phone.value:
+                self.phones.pop(i)
+                return f"Phone {phone} deleted successfully"
+        return f'Contact has no phone {phone}'  
     
     # Изменение телефона в адресной книги
     def change_phone(self, old_phone:Phone, new_phone:Phone):
@@ -103,10 +110,16 @@ def user_add(*args):
     if not re.match(r"^\+[\d]{12}$", phone.value):
         raise ValueError
     
-    rec = Record(name, phone)
-    user_contacts.add_record(rec)
+    rec:Record = user_contacts.get(name.value)
     
-    return f"{name} : {phone} has been added to the phone book"    
+    if not rec:
+        rec = Record(name, phone)
+        user_contacts.add_record(rec)
+    
+        return f"{name} : {phone} has been added to the phone book"
+    
+    rec.add_phone(phone)
+    return f"Phone {phone} add to contact {name}"
    
 
 # Change  изменение номера в адресной книги
@@ -128,10 +141,9 @@ def user_change(*args):
 @input_error
 def user_phone(*args):
     name = Name(args[0])
-
-    not_user_phone(name)
+    record = user_contacts[name.value]
   
-    return f"The phone number for {name} is {user_contacts[name]}"
+    return f"The phone number for {name} is {record.phones}"
     
 
 # Show all  вся адресная книга
@@ -153,11 +165,13 @@ def remove_phone(*args):
     name = Name(args[0])
     phone = Phone(args[1])
     
-    not_user = not_user_phone(name.value)
+    record:Record = user_contacts[name.value]
+    
+    return(record.remove_phone(phone))
 
-    if not_user:
-        rec = Record(name, phone)
-        user_contacts.remove_record(rec)
+    # if not_user:
+    #     rec = Record(name, phone)
+    #     user_contacts.remove_record(rec)
         
 def not_user_phone(name):
     for i in user_contacts.keys():
