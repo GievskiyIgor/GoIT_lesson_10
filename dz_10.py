@@ -7,6 +7,11 @@ class Field ():
     
     def __str__(self) -> str:
         return str(self.value)
+    
+    # 09042023
+    def __repr__(self) -> str:
+        return str(self)
+    # *** 
   
 
 class Name (Field):
@@ -40,7 +45,12 @@ class Record ():
 
     # Удаление телефона из адресной книги
     def remove_record(self, phone:Phone):
-        self.phones.remove(phone)
+        # self.phones.remove(phone)
+        for i, p in enumerate(self.phones):
+            if p.value == phone.value:
+                self.phones.pop(i)
+                return f"Phone {phone} deleted successfully"
+        return f'Contact has no phone {phone}'  
     
     # Изменение телефона в адресной книги
     def change_phone(self, old_phone:Phone, new_phone:Phone):
@@ -65,14 +75,14 @@ def user_help ():
    return """
           Phone book commands:
           1. hello
-          2. add 'Name' 'phone number" (Igor +380989709609')
-          3. change 'Name' phone number (Igor +380989709609')
+          2. add 'Name' 'phone number" (Igor +380989709609)
+          3. change 'Name' 'phone number1' 'phone number1' (Igor +380989709609 +380990509393)
           4. phone 'Name'
-          5. remove 'Name' number (Igor +380989709609') 
+          5. remove 'Name' 'phone number' (Igor +380989709609') 
           6. show all
           7. good bye
           8. close
-          9.exit
+          9. exit
           """
  
 # Decorator input errors
@@ -103,11 +113,17 @@ def user_add(*args):
     if not re.match(r"^\+[\d]{12}$", phone.value):
         raise ValueError
     
-    rec = Record(name, phone)
-    user_contacts.add_record(rec)
+    # 09042023
+    rec:Record = user_contacts.get(name.value)
     
-    return f"{name} : {phone} has been added to the phone book"    
-   
+    if not rec:
+        rec = Record(name, phone)
+        user_contacts.add_record(rec)
+        return f"{name} : {phone} has been added to the phone book"    
+    
+    rec.add_phone(phone)
+    return f"Phone {phone} add to contact {name}"
+    #  ****
 
 # Change  изменение номера в адресной книги
 @input_error
@@ -122,16 +138,19 @@ def user_change(*args):
         return rec.change_phone(old_phone, new_phone)
     
     return f'Phone book has no contact {name}'
-    
+
     
 # Contact phone number
 @input_error
 def user_phone(*args):
     name = Name(args[0])
+    record = user_contacts[name.value]
+    
+    # 09042023 
+    # not_user_phone(name)
+    # ***
 
-    not_user_phone(name)
-  
-    return f"The phone number for {name} is {user_contacts[name]}"
+    return f"The phone number for {name} is {record.phones}"
     
 
 # Show all  вся адресная книга
@@ -153,22 +172,30 @@ def remove_phone(*args):
     name = Name(args[0])
     phone = Phone(args[1])
     
-    not_user = not_user_phone(name.value)
+    rec:Record = user_contacts[name.value]
+    return rec.remove_record(phone) 
+    
+    # 09042023
+    # not_user = not_user_phone(name.value)
 
-    if not_user:
-        rec = Record(name, phone)
-        user_contacts.remove_record(rec)
-        
-def not_user_phone(name):
-    for i in user_contacts.keys():
-        print(i)
-    if name == "":
-        print("Try again. Enter contact name.")
-        return False
-    if name not in user_contacts.keys():
-        print(f'Contact {name} is not in phone book.')
-        return False
-    return True
+    # if not_user:
+    #     rec = Record(name, phone)
+    #     user_contacts.remove_record(rec)
+    # ****
+
+#09042023  
+# def not_user_phone(name):
+#     for i in user_contacts.keys():
+#         print(i, type(i))
+    
+#     if name == "":
+#         print("Try again. Enter contact name.")
+#         return False
+#     if name not in user_contacts.keys():
+#         print(f'Contact {name} is not in phone book.')
+#         return False
+#     return True
+# ****
 
 # Exit
 def user_exit(*args): 
@@ -181,10 +208,10 @@ COMMANDS = {
     'phone': user_phone, # Телефон
     'show all': user_show_all, # Список контактов
     "remove": remove_phone, # удаление из адресной книги
-    'good bye': user_exit,
+    'good bye': user_exit, # выход
     'close': user_exit,
     'exit': user_exit,
-    'help': user_help,
+    'help': user_help, # помощь
 }
  
 # Command processing
